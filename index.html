@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SENTRA Reader · AR</title>
+<meta name="description" content="Lihat SENTRA Reader v2 (konsep riset SENTRA-TB) dalam ukuran asli di ruangan Anda lewat augmented reality.">
+<meta name="theme-color" content="#0E1230">
+<link rel="preload" href="models/sentra_reader.glb" as="fetch" crossorigin>
+<script type="module" src="model-viewer.min.js"></script>
+<style>
+@font-face { font-family: Plex; src: url(fonts/ibm-plex-sans-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: Plex; src: url(fonts/ibm-plex-sans-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: PlexCond; src: url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: PlexMono; src: url(fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+:root {
+  --bg: #F4F5FA; --card: #FFFFFF; --ink: #15182F; --mut: #5B5F7A; --line: #DDE0EA;
+  --ind: #3439C4; --ind-s: #E8E9FC; --halo: #8FB5FF; --amb: #D9822B; --night: #0E1230;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0E1230; --card: #171C46; --ink: #F1F2FB; --mut: #A9ADD0; --line: #2A3170; --ind-s: #232A66; }
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.45 Plex, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.app { min-height: 100%; display: grid; grid-template-rows: auto 1fr auto; max-width: 1100px; margin: 0 auto; }
+header { display: flex; justify-content: space-between; align-items: center; padding: max(14px, env(safe-area-inset-top)) 16px 10px; }
+.brand { font: 700 19px/1 PlexCond, sans-serif; letter-spacing: .01em; }
+.brand b { color: var(--ind); } @media (prefers-color-scheme: dark) { .brand b { color: var(--halo); } }
+.tag { font: 500 10.5px/1 PlexMono, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); border: 1px solid var(--line); border-radius: 99px; padding: 6px 10px; }
+main { display: grid; grid-template-columns: 1fr; gap: 0; }
+@media (min-width: 900px) { main { grid-template-columns: 1fr 340px; gap: 20px; padding: 0 16px; } }
+.stage { position: relative; min-height: 62vh; }
+@media (min-width: 900px) { .stage { min-height: 640px; border-radius: 20px; overflow: hidden; background: var(--card); } }
+model-viewer { width: 100%; height: 100%; min-height: inherit; position: absolute; inset: 0; --poster-color: transparent; --progress-bar-color: var(--ind); background: transparent; }
+.seg { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: flex; background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 3px; z-index: 2; box-shadow: 0 4px 16px rgba(14, 18, 48, .08); }
+.seg button { border: 0; background: none; color: var(--mut); font: 600 13px/1 Plex, sans-serif; padding: 9px 16px; border-radius: 99px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.arbtn { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); border: 0; background: var(--ind); color: #fff; font: 600 15px/1 Plex, sans-serif; padding: 15px 22px 15px 18px; border-radius: 99px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 26px rgba(52, 57, 196, .35); cursor: pointer; white-space: nowrap; }
+.arbtn svg { width: 22px; height: 22px; }
+.noar { position: absolute; left: 16px; right: 16px; bottom: 14px; text-align: center; font-size: 13px; color: var(--mut); }
+.hot { display: block; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; background: var(--ind); color: #fff; font: 500 11px/22px PlexMono, monospace; text-align: center; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); cursor: pointer; padding: 0; }
+.hot { transition: opacity .2s; } .hot.back { opacity: 0; pointer-events: none; }
+.hot .lb { position: absolute; left: 32px; top: 50%; transform: translateY(-50%); white-space: nowrap; background: var(--night); color: #fff; font: 600 12px/1 Plex, sans-serif; padding: 7px 10px; border-radius: 8px; opacity: 0; pointer-events: none; transition: opacity .15s; }
+.hot.on .lb, .hot:focus-visible .lb { opacity: 1; }
+aside { padding: 18px 16px 8px; display: grid; gap: 14px; align-content: start; }
+h1 { font: 700 26px/1.05 PlexCond, sans-serif; }
+.lead { color: var(--mut); font-size: 14.5px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.card h2 { font: 600 11px/1 PlexMono, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); margin-bottom: 10px; }
+ol { list-style: none; padding: 0; display: grid; gap: 10px; }
+ol li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; font-size: 14px; }
+ol li i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ind); color: var(--ind); font: 500 12px/22px PlexMono, monospace; text-align: center; font-style: normal; }
+@media (prefers-color-scheme: dark) { ol li i { border-color: var(--halo); color: var(--halo); } }
+.parts { display: grid; gap: 8px; font-size: 13.5px; }
+.parts button { all: unset; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: center; cursor: pointer; padding: 4px 0; }
+.parts button span:first-child { width: 22px; height: 22px; border-radius: 50%; background: var(--ind); color: #fff; font: 500 10.5px/22px PlexMono, monospace; text-align: center; }
+.parts button:focus-visible { outline: 2px solid var(--ind); outline-offset: 3px; border-radius: 6px; }
+.parts small { display: block; color: var(--mut); font-size: 12.5px; }
+.dim { display: flex; gap: 8px; flex-wrap: wrap; }
+.dim span { font: 500 12px/1 PlexMono, monospace; background: var(--ind-s); border-radius: 99px; padding: 7px 10px; }
+footer { padding: 14px 16px max(18px, env(safe-area-inset-bottom)); font-size: 12px; color: var(--mut); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); margin-top: 8px; }
+.hide { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><div class="brand">SENTRA<b>-TB</b></div><span class="tag">AR · Reader v2</span></header>
+  <main>
+    <div class="stage">
+      <div class="seg" role="group" aria-label="Pilih tampilan model">
+        <button id="m-utuh" aria-pressed="true">Utuh</button>
+        <button id="m-urai" aria-pressed="false">Urai</button>
+      </div>
+      <model-viewer id="mv"
+        src="models/sentra_reader.glb" ios-src="models/sentra_reader.usdz"
+        alt="Model 3D SENTRA Reader v2: alat pembaca fluoresensi portabel dengan layar miring dan port cartridge di atas"
+        ar ar-modes="webxr scene-viewer quick-look" ar-scale="fixed" ar-placement="floor"
+        camera-controls touch-action="pan-y" interaction-prompt="auto"
+        camera-orbit="-32deg 72deg 0.62m" min-camera-orbit="auto auto 0.3m" max-camera-orbit="auto auto 1.6m"
+        field-of-view="30deg" shadow-intensity="1" shadow-softness="0.8" exposure="1.05" environment-image="neutral"
+        loading="eager" reveal="auto">
+        <button slot="ar-button" class="arbtn" aria-label="Lihat SENTRA Reader di ruangan Anda dengan AR">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8 20 7.4v9.2L12 21.2 4 16.6V7.4z"/><path d="m4 7.4 8 4.6 8-4.6M12 12v9.2"/></svg>
+          Lihat di ruangan Anda
+        </button>
+        <button class="hot" slot="hotspot-1" data-position="-0.045 0.088 0.046" data-normal="0 0.707 0.707"><span>1</span><span class="lb">Layar 7″ miring 45°</span></button>
+        <button class="hot" slot="hotspot-2" data-position="0.052 0.168 -0.071" data-normal="0 1 0"><span>2</span><span class="lb">Cartridge di port</span></button>
+        <button class="hot" slot="hotspot-3" data-position="0.034 0.143 -0.072" data-normal="0 1 0"><span>3</span><span class="lb">Cincin halo (status)</span></button>
+        <button class="hot" slot="hotspot-4" data-position="0.052 0.145 -0.043" data-normal="0 1 0"><span>4</span><span class="lb">Tombol eject</span></button>
+        <button class="hot" slot="hotspot-5" data-position="-0.07 0.036 0.098" data-normal="0 0 1"><span>5</span><span class="lb">Tombol daya &amp; suara</span></button>
+        <button class="hot" slot="hotspot-6" data-position="-0.0125 0.186 -0.065" data-normal="0 1 0"><span>6</span><span class="lb">Pegangan</span></button>
+        <button class="hot" slot="hotspot-7" data-position="0 0.07 -0.113" data-normal="0 0 -1"><span>7</span><span class="lb">Panel I/O belakang</span></button>
+        <p class="noar hide" id="noar">Mode AR terbuka di HP Android (ARCore) atau iPhone/iPad. Di perangkat ini model tetap bisa diputar dan diperbesar.</p>
+      </model-viewer>
+    </div>
+    <aside>
+      <div>
+        <h1>SENTRA Reader dalam ukuran asli</h1>
+        <p class="lead" style="margin-top:8px">Taruh alat pembaca SENTRA-TB di meja Anda. Model tampil dengan skala 1 : 1, jadi Anda bisa menilai ukuran, tinggi port, dan sudut layar.</p>
+      </div>
+      <div class="dim"><span>224 × 229 × 186 mm</span><span>± 1,9 kg</span><span>port 140 mm</span></div>
+      <div class="card">
+        <h2>Cara melihat dalam AR</h2>
+        <ol>
+          <li><i>1</i><span>Tekan <b>Lihat di ruangan Anda</b> dan izinkan kamera.</span></li>
+          <li><i>2</i><span>Gerakkan HP perlahan ke arah meja atau lantai yang cukup terang sampai permukaan dikenali.</span></li>
+          <li><i>3</i><span>Ketuk untuk menaruh. Geser untuk memindahkan, putar dengan dua jari. Ukuran sengaja dikunci ke ukuran asli.</span></li>
+          <li><i>4</i><span>Pilih <b>Urai</b> sebelum masuk AR untuk melihat 568 part terurai lalu menyatu kembali.</span></li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>Bagian yang ditandai</h2>
+        <div class="parts" id="parts"></div>
+      </div>
+    </aside>
+  </main>
+  <footer><span>SENTRA-TB · Tim SENTRA-TB · NATUS 2026</span><span>Konsep riset, belum tervalidasi secara klinis</span></footer>
+</div>
+<script>
+const mv = document.getElementById('mv');
+const MODELS = {
+  utuh: { src: 'models/sentra_reader.glb', ios: 'models/sentra_reader.usdz', hot: true },
+  urai: { src: 'models/sentra_reader_urai.glb', ios: 'models/sentra_reader_urai.usdz', hot: false }
+};
+const desc = {
+  1: 'Layar sentuh, bisa dipakai dengan sarung tangan',
+  2: 'Cartridge RIF atau FQ, tertutup permanen',
+  3: 'Menyala sesuai kemajuan pembacaan',
+  4: 'Mendorong cartridge keluar setelah selesai',
+  5: 'Bulat = daya, kotak = panduan suara',
+  6: 'Dijinjing satu tangan',
+  7: 'USB-C PD, USB-A, Ethernet'
+};
+const hots = [...mv.querySelectorAll('.hot')];
+const list = document.getElementById('parts');
+hots.forEach((h, i) => {
+  const n = i + 1, label = h.querySelector('.lb').textContent;
+  const b = document.createElement('button');
+  b.innerHTML = `<span>${n}</span><span>${label}<small>${desc[n]}</small></span>`;
+  b.addEventListener('click', () => focusHot(h));
+  list.appendChild(b);
+  h.addEventListener('click', () => focusHot(h));
+});
+function focusHot(h) {
+  if (mv.src !== MODELS.utuh.src && !mv.src.endsWith(MODELS.utuh.src)) setMode('utuh');
+  hots.forEach(x => x.classList.toggle('on', x === h));
+  const p = h.dataset.position.split(' ').map(Number), nrm = h.dataset.normal.split(' ').map(Number);
+  mv.cameraTarget = `${p[0]}m ${p[1]}m ${p[2]}m`;
+  const theta = Math.atan2(nrm[0], nrm[2]) * 180 / Math.PI;
+  const phi = Math.acos(Math.max(-1, Math.min(1, nrm[1]))) * 180 / Math.PI;
+  mv.cameraOrbit = `${theta}deg ${Math.min(Math.max(phi, 40), 100)}deg 0.6m`;
+  clearTimeout(focusHot.t);
+  focusHot.t = setTimeout(() => h.classList.remove('on'), 3500);
+}
+function setMode(k) {
+  const m = MODELS[k];
+  mv.src = m.src; mv.iosSrc = m.ios;
+  document.getElementById('m-utuh').setAttribute('aria-pressed', k === 'utuh');
+  document.getElementById('m-urai').setAttribute('aria-pressed', k === 'urai');
+  hots.forEach(h => h.classList.toggle('hide', !m.hot));
+  mv.cameraTarget = k === 'urai' ? '0.045m 0.17m -0.047m' : 'auto auto auto';
+  mv.maxCameraOrbit = k === 'urai' ? 'auto auto 3.2m' : 'auto auto 1.6m';
+  mv.cameraOrbit = k === 'urai' ? '-32deg 66deg 2.1m' : '-32deg 72deg 0.62m';
+  if (k === 'urai') { mv.autoplay = true; mv.animationName = 'Explode'; } else { mv.autoplay = false; mv.pause(); }
+}
+document.getElementById('m-utuh').onclick = () => setMode('utuh');
+document.getElementById('m-urai').onclick = () => setMode('urai');
+let hotQueued = false;
+function updHots() {
+  if (hotQueued) return;
+  hotQueued = true;
+  setTimeout(() => {
+    hotQueued = false;
+    hots.forEach(h => {
+      const q = mv.queryHotspot(h.slot), back = !!q && !q.facingCamera;
+      if (h.classList.contains('back') !== back) h.classList.toggle('back', back);
+    });
+  }, 120);
+}
+mv.addEventListener('camera-change', updHots);
+mv.addEventListener('load', () => { updHots(); if (mv.src.includes('urai')) mv.play({ repetitions: Infinity }); });
+customElements.whenDefined('model-viewer').then(() => setTimeout(() => {
+  if (!mv.canActivateAR) document.getElementById('noar').classList.remove('hide');
+}, 1200));
+</script>
+</body>
+</html>
