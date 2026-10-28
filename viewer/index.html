@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Viewer 3D interaktif SENTRA Reader v2: putar, urai 568 part, mode X-ray, dan penjelasan tiap komponen.">
+<meta name="theme-color" content="#0E1230">
+<title>SENTRA Reader 3D</title>
+<style>
+@font-face { font-family: "IBM Plex Sans"; src: url(../fonts/ibm-plex-sans-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url(../fonts/ibm-plex-sans-latin-500-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url(../fonts/ibm-plex-sans-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans Condensed"; src: url(../fonts/ibm-plex-sans-condensed-latin-500-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans Condensed"; src: url(../fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans Condensed"; src: url(../fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url(../fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url(../fonts/ibm-plex-mono-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+
+/* Layout: workbench — model stage on the left, spec panel on the right (stacks on phones). */
+:root {
+  --bg: #F1F2F7; --panel: #FFFFFF; --panel-2: #F7F8FC; --fg: #171A33; --muted: #5A5F7E; --line: #DCDFEA;
+  --accent: #3439C4; --accent-ink: #FFFFFF; --accent-soft: #E6E7FB; --warn: #B4570A; --warn-soft: #FDF0E3;
+  --test: #8A2BB0; --test-soft: #F4E8FA; --stage: #E7E9F1; --stage-2: #F6F7FB;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1120; --panel: #161A2E; --panel-2: #1B2038; --fg: #E8EAF8; --muted: #A2A7C8; --line: #2A2F4C;
+  --accent: #8E92FF; --accent-ink: #0F1120; --accent-soft: #23285A; --warn: #F2A55A; --warn-soft: #3A2A1A;
+  --test: #D49BF0; --test-soft: #33224A; --stage: #121527; --stage-2: #1B1F38; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0F1120; --panel: #161A2E; --panel-2: #1B2038; --fg: #E8EAF8; --muted: #A2A7C8; --line: #2A2F4C;
+  --accent: #8E92FF; --accent-ink: #0F1120; --accent-soft: #23285A; --warn: #F2A55A; --warn-soft: #3A2A1A;
+  --test: #D49BF0; --test-soft: #33224A; --stage: #121527; --stage-2: #1B1F38; color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 400px; grid-template-rows: auto minmax(0, 1fr);
+       height: 100%; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+       padding-block: 14px; gap: 12px 16px; box-sizing: border-box; }
+header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 26px; letter-spacing: .01em; margin: 0; text-wrap: balance; }
+h1 b { color: var(--accent); font-weight: 700; }
+.sub { color: var(--muted); font-size: 13.5px; }
+.spec { margin-left: auto; display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); }
+.spec span b { color: var(--fg); font-weight: 600; }
+.stage { position: relative; min-height: 0; border-radius: 14px; overflow: hidden;
+         background: radial-gradient(120% 90% at 50% 35%, var(--stage-2), var(--stage)); border: 1px solid var(--line); }
+#c { width: 100%; height: 100%; display: block; touch-action: none; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-family: var(--f-mono); font-size: 13px; }
+.toolbar { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; pointer-events: none; }
+.toolbar > * { pointer-events: auto; }
+.seg { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button, .btn { font: 600 13px/1 var(--f-body); color: var(--fg); background: transparent; border: 0; border-radius: 7px; padding: 8px 11px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.btn { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.btn:hover, .seg button:hover { outline: 2px solid var(--accent-soft); }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.explode { display: inline-flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; }
+.explode label { font: 600 12px/1 var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.explode input { width: 150px; accent-color: var(--accent); }
+.explode output { font-family: var(--f-mono); font-size: 12px; width: 3.2em; text-align: right; }
+.hint { position: absolute; top: 12px; left: 12px; font-size: 12.5px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; }
+aside { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+.info { padding: 14px 16px; flex: none; max-height: 52%; overflow: auto; }
+.info .id { font-family: var(--f-mono); font-size: 12px; color: var(--accent); font-weight: 600; }
+.info h2 { font-family: var(--f-display); font-size: 21px; font-weight: 700; margin: 2px 0 8px; line-height: 1.15; text-wrap: balance; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.stnote { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+.chip { font: 600 11.5px/1 var(--f-body); padding: 5px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.chip.t { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.chip.u { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.chip.p { background: var(--test-soft); color: var(--test); border-color: transparent; }
+dl { margin: 0; display: grid; gap: 8px; }
+dt { font: 600 11.5px/1.2 var(--f-display); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+dd { margin: 0; font-size: 14px; }
+.tree { flex: 1; min-height: 0; overflow: auto; padding: 6px 8px 10px; }
+details { border-bottom: 1px solid var(--line); }
+details:last-child { border-bottom: 0; }
+summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 9px 8px; font: 600 14px/1.2 var(--f-display); letter-spacing: .02em; }
+summary::-webkit-details-marker { display: none; }
+summary .n { margin-left: auto; font: 500 12px var(--f-mono); color: var(--muted); }
+summary::before { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(-45deg); transition: transform .15s; }
+details[open] summary::before { transform: rotate(45deg); }
+.mods { display: grid; gap: 2px; padding: 0 4px 8px 20px; }
+.mod { display: flex; gap: 10px; align-items: baseline; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 6px 8px; cursor: pointer; color: var(--fg); font: 14px/1.3 var(--f-body); }
+.mod code { font: 600 12px var(--f-mono); color: var(--muted); min-width: 2.9em; }
+.mod:hover { background: var(--panel-2); }
+.mod[aria-current="true"] { background: var(--accent-soft); }
+.mod[aria-current="true"] code { color: var(--accent); }
+.legend { font-size: 12.5px; color: var(--muted); padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 6px 12px; }
+@media (max-width: 900px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 62vh auto; height: auto; }
+  aside { min-height: auto; }
+  .info { max-height: none; }
+  .tree { max-height: 60vh; }
+  .spec { margin-left: 0; }
+  .explode input { width: 110px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <header>
+    <h1>SENTRA <b>Reader</b> v2</h1>
+    <span class="sub">Model 3D konsep riset · belum tervalidasi klinis · <a href="../" style="color:var(--accent);font-weight:600">Lihat dalam AR</a></span>
+    <div class="spec" aria-label="Spesifikasi usulan">
+      <span>L×P×T <b>224×229×186 mm</b></span><span>massa ≈ <b>1,9 kg</b> (est.)</span><span><b>568</b> part</span>
+    </div>
+  </header>
+
+  <section class="stage" aria-label="Model 3D">
+    <canvas id="c" aria-label="Model 3D SENTRA Reader, seret untuk memutar, klik part untuk detail"></canvas>
+    <div class="loading" id="loading">Memuat model 3D…</div>
+    <div class="hint" id="hint">Seret untuk memutar · gulir/cubit untuk zoom · klik part untuk detail</div>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Tampilan">
+        <button type="button" id="m-full" aria-pressed="true">Utuh</button>
+        <button type="button" id="m-xray" aria-pressed="false">X-ray</button>
+        <button type="button" id="m-int" aria-pressed="false">Internal</button>
+      </div>
+      <div class="explode">
+        <label for="ex">Exploded</label>
+        <input id="ex" type="range" min="0" max="100" value="0">
+        <output id="exv" for="ex">0%</output>
+      </div>
+      <div class="seg" role="group" aria-label="Status halo">
+        <button type="button" data-halo="siap" aria-pressed="false">Siap</button>
+        <button type="button" data-halo="baca" aria-pressed="true">Membaca</button>
+        <button type="button" data-halo="aksi" aria-pressed="false">Perlu tindakan</button>
+        <button type="button" data-halo="selesai" aria-pressed="false">Selesai</button>
+      </div>
+      <button type="button" class="btn" id="cart">Keluarkan cartridge</button>
+      <div class="seg" role="group" aria-label="Sudut kamera">
+        <button type="button" data-cam="front">Depan</button>
+        <button type="button" data-cam="right">Kanan</button>
+        <button type="button" data-cam="back">Belakang</button>
+        <button type="button" data-cam="top">Atas</button>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card info" id="info" aria-live="polite"></div>
+    <div class="card tree" id="tree" aria-label="Daftar komponen"></div>
+    <div class="card legend">
+      <span class="chip t">Terlihat</span> ada pada visual konsep awal
+      <span class="chip u">Usulan</span> rancangan baru
+      <span class="chip p">Perlu diuji</span> butuh eksperimen
+    </div>
+  </aside>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script src="lib/GLTFLoader.js"></script>
+<script src="lib/RoomEnvironment.js"></script>
+<script>
+const DATA = {"D": {"E01": {"id": "E01", "nama": "Rangka depan (bumper)", "grup": "Eksterior", "fungsi": "Membingkai layar dan tombol, melindungi tepi depan saat alat dibawa, diletakkan, atau terjatuh, serta menjadi titik tumpu ujung depan pegangan.", "bentuk": "Cincin selebar 12 mm yang menonjol 2 mm dari cangkang dan mengikuti kemiringan layar 45°. Sudut luar dibulatkan R3,5 mm dan sambungan layar–dek dibuat melengkung R26 mm supaya tidak ada tepi tajam yang menyakiti tangan, benturan tersebar, dan bentuknya mudah dibersihkan. Bagian bawahnya duduk di atas tray dasar sehingga tepi depan yang paling sering terbentur ikut terlindungi.", "bahan": "Inti PC/ABS tahan api (UL94 V-0) dengan lapisan luar TPE Shore ±60A warna Indigo SENTRA (biru-ungu). PC/ABS dipilih karena kuat, stabil dimensi, dan umum di alat kesehatan; TPE memberi cengkeraman dan peredam benturan.", "proses": "Injection molding dua tahap (2K/overmold).", "status": "Terlihat (warna biru-ungu) · Usulan (bentuk bumper & ukuran)", "inklusif": "Bingkai berwarna gelap-terang tegas di sekeliling layar hitam membantu pengguna low vision menemukan batas area sentuh.", "uji": "Uji jatuh 1 m, ketahanan TPE terhadap alkohol 70% dan hipoklorit 0,5%."}, "E02": {"id": "E02", "nama": "Rangka belakang (bumper)", "grup": "Eksterior", "fungsi": "Melindungi tepi belakang dan panel I/O, menjadi tumpuan ujung belakang pegangan, dan menahan alat bila diletakkan berdiri di sisi belakangnya saat servis.", "bentuk": "Bentuk ∩ yang membingkai panel belakang dengan pita 12 mm dan tonjolan 2 mm, sama dengan rangka depan supaya kedua ujung alat terlindungi secara simetris. Area I/O diletakkan masuk ke dalam bingkai sehingga konektor tidak tertabrak saat alat digeser ke dinding.", "bahan": "PC/ABS V-0 + overmold TPE, Indigo SENTRA.", "proses": "Injection molding 2K.", "status": "Terlihat (warna) · Usulan (bentuk)", "inklusif": "", "uji": "Uji jatuh pada sudut belakang; uji tarik-tekan pegangan pada titik sambung."}, "E03": {"id": "E03", "nama": "Pegangan / tulang punggung", "grup": "Eksterior", "fungsi": "Pegangan untuk membawa alat dengan satu tangan, sekaligus 'roll bar' yang melindungi cangkang transparan bila alat terguling.", "bentuk": "Lengkung ∩ yang menyambung rangka depan dan rangka belakang di atas pusat massa alat, sehingga alat tidak terlalu miring saat dijinjing. Celah bawah ±32 mm dan panjang genggaman ±100 mm muat untuk tangan bersarung tangan. Penampang 21 × 14 mm dengan sudut membulat dan alur melintang halus di sisi bawah agar tidak licin. Pegangan diletakkan di kiri port cartridge sehingga tidak menghalangi tangan saat memasukkan cartridge.", "bahan": "PC/ABS + glass fiber 10% (kaku) dengan overmold TPE di area genggam.", "proses": "Injection molding 2K; dibaut ke rangka depan & belakang.", "status": "Usulan", "inklusif": "Satu tangan cukup untuk membawa (estimasi bobot ±2 kg); posisi tengah membuat pengguna kidal maupun kanan sama mudahnya.", "uji": "Uji beban statis 4× bobot alat; uji kenyamanan genggam dengan sarung tangan nitril."}, "E04": {"id": "E04", "nama": "Cangkang transparan", "grup": "Eksterior", "fungsi": "Menutup bagian atas dan samping alat sambil memperlihatkan modul elektronik (identitas visual konsep awal), memudahkan teknisi melihat kondisi internal tanpa membongkar, dan meneruskan sinyal Wi-Fi/LTE.", "bentuk": "Satu kulit melengkung (radius sudut atas 26 mm) di antara kedua rangka, tebal 2,5 mm. Hanya area elektronik yang dibuat transparan; ruang baca optik tetap berada di dalam selubung hitam tersendiri, karena guidebook menyatakan ruang baca perlu pelindung cahaya. Permukaan halus tanpa celah memudahkan desinfeksi.", "bahan": "Polikarbonat (PC) bening sedikit diasapkan (tint biru-abu), dengan hard-coat anti gores dan stabilizer UV. PC dipilih karena tahan benturan jauh lebih baik daripada akrilik dan tidak pecah tajam. Plastik juga tembus sinyal radio sehingga antena bisa diletakkan di bawahnya.", "proses": "Injection molding dengan cetakan dipoles (SPI A-1) + hard-coat celup.", "status": "Terlihat (housing transparan) · Usulan (hanya area elektronik, smoke tint)", "inklusif": "", "uji": "Uji gores & kekuningan UV; uji kebocoran cahaya ke ruang baca (harus nol)."}, "E05": {"id": "E05", "nama": "Tray dasar", "grup": "Eksterior", "fungsi": "Fondasi yang menampung pelat chassis, baterai, ventilasi masuk, kaki, dan pintu baterai.", "bentuk": "Wadah dangkal setinggi 12 mm dengan sudut bawah membulat dan tepi bawah difillet supaya mudah digeser di meja tanpa tersangkut. Lubang ventilasi masuk berada di bawah heatsink agar udara segar langsung menuju jalur pendinginan. Ada ceruk label di bagian bawah.", "bahan": "PC/ABS V-0 abu-abu terang.", "proses": "Injection molding.", "status": "Terlihat (dasar abu-abu) · Usulan (detail)", "inklusif": "", "uji": ""}, "E06": {"id": "E06", "nama": "Panel muka", "grup": "Eksterior", "fungsi": "Panel miring yang menahan kaca layar, dua tombol fisik, dan kisi speaker.", "bentuk": "Bidang miring 45° dari vertikal: kompromi sudut pandang orang berdiri (mata ±50–60 cm di atas meja) dan orang duduk/pengguna kursi roda (±30 cm di atas meja), sehingga keduanya melihat layar hampir tegak lurus. Pita bawah selebar ±22 mm khusus untuk tombol dengan punggung taktil (garis timbul) sebagai pemandu jari menuju tombol.", "bahan": "PC/ABS V-0 warna arang (charcoal) bertekstur halus anti sidik jari.", "proses": "Injection molding; logo dicetak pad print.", "status": "Terlihat (panel depan) · Usulan (kemiringan 45°, tata letak tombol)", "inklusif": "Satu-satunya kontrol fisik ada di depan, dalam jangkauan pengguna duduk maupun berdiri.", "uji": ""}, "E07": {"id": "E07", "nama": "Kaca penutup layar", "grup": "Eksterior", "fungsi": "Melindungi layar sentuh dan memberi permukaan rata yang mudah dibersihkan.", "bentuk": "Satu lembar kaca rata menutup hampir seluruh panel (edge-to-edge) tanpa bezel menonjol, sehingga kotoran tidak terselip di sudut. Diikat optik (optical bonding) ke LCD supaya pantulan berkurang dan layar terbaca di ruangan terang.", "bahan": "Kaca aluminosilikat diperkuat kimia 1,1–1,5 mm, lapisan anti-glare & anti-fingerprint, tepi cetak hitam.", "proses": "Potong CNC, penguatan kimia, cetak sutra, optical bonding.", "status": "Terlihat (layar sentuh) · Usulan (spesifikasi kaca)", "inklusif": "", "uji": "Uji keterbacaan di bawah lampu ruangan & cahaya luar; uji sentuh dengan sarung tangan nitril."}, "E08": {"id": "E08", "nama": "Pulau port", "grup": "Eksterior", "fungsi": "Dudukan atas tempat cartridge dimasukkan; menyatukan corong, cincin halo, tombol eject, dan antena NFC dalam satu modul.", "bentuk": "Bentuk 'pulau' persegi membulat yang sedikit timbul 3 mm dari dek, sehingga area kerja cartridge mudah ditemukan secara visual maupun dengan rabaan. Dua titik timbul di kiri-kanan halo menandai sumbu port. Port di atas (memasukkan dari atas ke bawah) dipilih karena gravitasi membantu cartridge turun ke posisi baca, gaya yang diperlukan kecil, dan port terlihat jelas dari posisi berdiri maupun duduk.", "bahan": "PC/ABS V-0 abu-abu terang.", "proses": "Injection molding.", "status": "Usulan (menggantikan slot vertikal di panel depan)", "inklusif": "Gaya masuk rendah dan corong lebar membantu pengguna dengan tremor atau kekuatan tangan berkurang.", "uji": ""}, "E09": {"id": "E09", "nama": "Cincin halo (pemandu cahaya)", "grup": "Eksterior", "fungsi": "Indikator status besar yang terlihat dari seberang ruangan: siap, sedang membaca (terisi bertahap seperti jam), perlu tindakan, selesai, atau galat.", "bentuk": "Cincin Ø40 mm yang mengelilingi port, jadi status selalu berada di tempat tindakan dilakukan. Bentuk lingkaran memungkinkan status ditunjukkan dengan POSISI dan POLA (busur yang bertambah, berkedip, berputar), bukan hanya dengan warna, sehingga tetap bisa dibaca oleh pengguna buta warna.", "bahan": "PC opal (difusi) atau PMMA difusi dengan 16 LED RGB di bawahnya.", "proses": "Injection molding material difusi.", "status": "Usulan", "inklusif": "Status juga diumumkan lewat layar (ikon + teks) dan suara; pengguna tuna rungu tetap mendapat sinyal visual yang besar.", "uji": ""}, "E10": {"id": "E10", "nama": "Corong & dudukan cartridge", "grup": "Eksterior", "fungsi": "Menuntun cartridge masuk tanpa perlu membidik, mengunci orientasinya, dan menjadi dudukan kedap cahaya.", "bentuk": "Corong melingkar Ø29 mm yang menyempit ke lubang berkunci 20,6 × 12,6 mm dengan satu sudut terpotong (kunci orientasi) sehingga cartridge hanya bisa masuk satu arah. Di bawahnya ada ceruk tempat kepala cartridge duduk di atas gasket: kepala cartridge sendiri berfungsi sebagai sumbat cahaya, jadi tidak perlu pintu berengsel.", "bahan": "PC/ABS hitam arang (menyerap cahaya nyasar).", "proses": "Injection molding.", "status": "Usulan", "inklusif": "", "uji": "Uji kebocoran cahaya dengan detektor saat cartridge terpasang; uji salah-pasang (harus tidak bisa masuk)."}, "E11": {"id": "E11", "nama": "Panel belakang I/O", "grup": "Eksterior", "fungsi": "Menyediakan konektor dan lubang buang udara.", "bentuk": "Semua konektor dikelompokkan dalam satu bingkai timbul yang mudah diraba (USB-C daya/data, USB-A untuk pemindai barcode atau printer, Ethernet RJ45, slot kunci Kensington). Kisi buang udara diletakkan di belakang supaya udara hangat tidak mengarah ke pengguna.", "bahan": "PC/ABS V-0 abu-abu terang.", "proses": "Injection molding.", "status": "Usulan", "inklusif": "USB-C PD berarti alat dapat diisi dari charger laptop, power bank, atau charger mobil.", "uji": ""}, "E12": {"id": "E12", "nama": "Pintu baterai", "grup": "Eksterior", "fungsi": "Akses servis untuk mengganti paket baterai tanpa membongkar alat.", "bentuk": "Pelat rata dengan dua sekrup dan ceruk jari, terletak di bawah alat sehingga tidak terbuka tanpa sengaja.", "bahan": "PC/ABS V-0.", "proses": "Injection molding.", "status": "Usulan", "inklusif": "", "uji": ""}, "E13": {"id": "E13", "nama": "Kaki anti-selip (×4)", "grup": "Eksterior", "fungsi": "Menahan alat agar tidak bergeser saat layar disentuh atau cartridge ditekan dengan satu tangan.", "bentuk": "Kubah Ø18 mm di empat sudut, cukup lebar untuk meja yang tidak rata.", "bahan": "TPE/silikon Shore 50A.", "proses": "Injection molding; dipasang tekan.", "status": "Usulan", "inklusif": "", "uji": ""}, "E14": {"id": "E14", "nama": "Tombol daya", "grup": "Eksterior", "fungsi": "Menyalakan/mematikan alat.", "bentuk": "Tombol BULAT Ø16 mm, menonjol 1,5 mm, dengan simbol daya timbul berwarna gelap. Bentuk bulat dipakai khusus untuk daya sehingga bisa dibedakan dari tombol lain hanya dengan rabaan.", "bahan": "Silikon/TPE abu-abu terang, simbol 2K warna arang.", "proses": "Molding 2K.", "status": "Usulan", "inklusif": "Bentuk berbeda (bulat/kotak/segitiga) + simbol timbul kontras tinggi.", "uji": ""}, "E15": {"id": "E15", "nama": "Tombol panduan suara", "grup": "Eksterior", "fungsi": "Mengulang instruksi langkah saat ini dengan suara; tekan lama untuk membuka menu aksesibilitas (teks besar, kontras tinggi, volume).", "bentuk": "Tombol KOTAK 16 mm dengan simbol speaker timbul. Diletakkan di sebelah tombol daya pada pita bawah yang sama.", "bahan": "Silikon/TPE, simbol 2K arang.", "proses": "Molding 2K.", "status": "Usulan", "inklusif": "Membantu pengguna dengan penglihatan terbatas, literasi rendah, atau yang baru pertama kali memakai alat.", "uji": ""}, "E16": {"id": "E16", "nama": "Tombol eject", "grup": "Eksterior", "fungsi": "Melepas cartridge setelah pembacaan selesai; ditolak (dengan pesan & suara) bila pembacaan masih berjalan.", "bentuk": "Tombol SEGITIGA di depan port dengan simbol eject timbul yang menunjuk ke arah cartridge. Pegas ejector mendorong cartridge naik ±10 mm sehingga mudah diambil tanpa mencungkil.", "bahan": "Silikon/TPE, simbol 2K arang.", "proses": "Molding 2K.", "status": "Usulan", "inklusif": "Tidak perlu tenaga cubit/tarik yang besar; cocok untuk pengguna lansia atau dengan radang sendi.", "uji": ""}, "E17": {"id": "E17", "nama": "Penutup debu port", "grup": "Eksterior", "fungsi": "Menutup lubang port saat tidak ada cartridge, mencegah debu dan percikan masuk ke ruang baca.", "bentuk": "Bilah tipis berengsel pegas yang terdorong turun oleh cartridge dan menutup kembali sendiri.", "bahan": "PC/ABS hitam + pegas baja tahan karat.", "proses": "Injection molding.", "status": "Usulan", "inklusif": "", "uji": ""}, "E18": {"id": "E18", "nama": "Gasket kedap cahaya", "grup": "Eksterior", "fungsi": "Menutup celah antara kepala cartridge dan dudukan sehingga cahaya luar tidak masuk ke ruang baca.", "bentuk": "Cincin persegi membulat tipis di dasar ceruk, ditekan oleh kepala cartridge.", "bahan": "Busa EPDM/PU hitam sel tertutup.", "proses": "Die-cut, perekat.", "status": "Usulan", "inklusif": "", "uji": "Uji background sinyal saat lampu ruangan dinyalakan/dimatikan (Tahap 2 guidebook)."}, "E19": {"id": "E19", "nama": "Filter debu ventilasi", "grup": "Eksterior", "fungsi": "Menyaring udara masuk ke jalur pendingin.", "bentuk": "Lembaran jaring di atas kisi bawah, dapat dilepas untuk dibersihkan.", "bahan": "Jaring poliester/PP.", "proses": "Potong.", "status": "Usulan", "inklusif": "", "uji": ""}, "E20": {"id": "E20", "nama": "Logo SENTRA", "grup": "Eksterior", "fungsi": "Identitas produk.", "bentuk": "Logotype di tengah pita bawah panel muka.", "bahan": "Tinta pad print putih tahan alkohol.", "proses": "Pad printing.", "status": "Usulan", "inklusif": "", "uji": ""}, "E21": {"id": "E21", "nama": "Label identitas & rating", "grup": "Eksterior", "fungsi": "Menampilkan nama model, peringatan penggunaan, rating daya & baterai, dan nomor seri.", "bentuk": "Label di panel belakang, di luar area genggam supaya tidak cepat aus.", "bahan": "Label poliester tahan bahan kimia.", "proses": "Cetak & tempel.", "status": "Usulan (isi label final mengikuti regulasi)", "inklusif": "", "uji": ""}, "U01": {"id": "U01", "nama": "Modul layar 7\" IPS + sentuh kapasitif", "grup": "Antarmuka", "fungsi": "Menampilkan langkah kerja, status, dan hasil molekuler; menerima input sentuh.", "bentuk": "Layar lanskap 7\" (1024 × 600) dengan sudut pandang lebar IPS, jadi tetap terbaca dari samping atau dari posisi duduk. Lanskap memberi ruang untuk tombol layar besar (≥ 12 mm) dan teks besar.", "bahan": "Modul LCD IPS + sensor sentuh kapasitif dengan mode sarung tangan.", "proses": "Komponen beli jadi (off-the-shelf).", "status": "Terlihat (layar sentuh) · Usulan (ukuran & jenis)", "inklusif": "Mode teks besar, kontras tinggi, ikon + teks, bahasa Indonesia (bahasa daerah dapat ditambah).", "uji": ""}, "U02": {"id": "U02", "nama": "Papan driver layar & sentuh", "grup": "Antarmuka", "fungsi": "Mengubah sinyal dari papan utama menjadi sinyal layar dan membaca sentuhan.", "bentuk": "Papan kecil yang menempel di belakang layar agar kabel fleksibel pendek.", "bahan": "PCB FR-4 4 lapis.", "proses": "SMT assembly.", "status": "Usulan", "inklusif": "", "uji": ""}, "U04": {"id": "U04", "nama": "Speaker panduan suara", "grup": "Antarmuka", "fungsi": "Memberikan instruksi suara, nada konfirmasi, dan alarm.", "bentuk": "Speaker kotak 36 × 16 mm yang menghadap kisi di panel muka sehingga suara mengarah ke pengguna.", "bahan": "Speaker 1–2 W dengan membran tahan lembap.", "proses": "Komponen beli jadi.", "status": "Usulan", "inklusif": "Setiap bunyi punya padanan visual (halo + teks di layar) untuk pengguna tuna rungu.", "uji": ""}, "U05": {"id": "U05", "nama": "Papan tombol taktil", "grup": "Antarmuka", "fungsi": "Membaca tekanan tombol daya dan panduan suara.", "bentuk": "Saklar taktil dengan klik yang terasa jelas, tepat di belakang tombol silikon.", "bahan": "PCB FR-4 + saklar taktil 6 × 6 mm.", "proses": "SMT assembly.", "status": "Usulan", "inklusif": "", "uji": ""}, "U06": {"id": "U06", "nama": "Papan LED halo", "grup": "Antarmuka", "fungsi": "Menyalakan 16 LED RGB di bawah cincin halo untuk pola status.", "bentuk": "PCB berbentuk cincin mengikuti halo agar cahaya rata.", "bahan": "PCB FR-4 + 16 LED RGB.", "proses": "SMT assembly.", "status": "Usulan", "inklusif": "", "uji": ""}, "U07": {"id": "U07", "nama": "Koil antena NFC", "grup": "Antarmuka", "fungsi": "Membaca tag NFC di cartridge: jenis panel, nomor lot, tanggal kedaluwarsa, dan data kalibrasi lot. Alat menolak cartridge yang kedaluwarsa atau tidak cocok sebelum reaksi dimulai.", "bentuk": "Lilitan tembaga berbentuk cincin tepat di bawah dudukan, berdekatan dengan tag di kepala cartridge.", "bahan": "PCB fleksibel/FR-4 tipis dengan lilitan tembaga.", "proses": "Fabrikasi PCB.", "status": "Usulan", "inklusif": "Mengurangi langkah ketik manual dan kesalahan input.", "uji": ""}, "U08": {"id": "U08", "nama": "Antena flex Wi-Fi/BT & LTE", "grup": "Antarmuka", "fungsi": "Mengirim hasil ke SENTRA-AID dan menerima pembaruan saat ada jaringan.", "bentuk": "Antena tipis ditempel di bawah cangkang transparan (plastik tembus sinyal), jauh dari pelat logam.", "bahan": "Antena FPC.", "proses": "Komponen beli jadi.", "status": "Usulan", "inklusif": "", "uji": "Uji jangkauan sinyal di dalam rumah alat; mode offline wajib tersedia."}, "O01": {"id": "O01", "nama": "Selubung optik kedap cahaya (badan + tutup)", "grup": "Inti optik & termal", "fungsi": "Membuat ruang baca yang gelap total sehingga yang terbaca hanya fluoresensi dari reaksi, bukan cahaya ruangan.", "bentuk": "Kotak tertutup dengan bibir labirin di sambungan tutup–badan; kabel keluar lewat celah sempit berbelok. Dibagi dua (badan & tutup) agar mudah dirakit dan diservis.", "bahan": "PC/ABS hitam pekat (atau PA6 hitam), permukaan dalam bertekstur matte.", "proses": "Injection molding.", "status": "Usulan", "inklusif": "", "uji": "Uji background & pengaruh cahaya sekitar (Tahap 2 guidebook)."}, "O02": {"id": "O02", "nama": "Sleeve pemandu cartridge", "grup": "Inti optik & termal", "fungsi": "Menuntun cartridge dari dudukan ke blok termal dengan presisi, sehingga ruang reaksi selalu tepat di jalur optik.", "bentuk": "Selongsong berkunci yang sama bentuknya dengan cartridge; bisa ditarik keluar dari atas untuk dibersihkan bila ada tumpahan.", "bahan": "POM (asetal) hitam: licin, kaku, tahan bahan kimia pembersih.", "proses": "Injection molding/CNC.", "status": "Usulan", "inklusif": "", "uji": ""}, "O03": {"id": "O03", "nama": "Blok termal aluminium", "grup": "Inti optik & termal", "fungsi": "Menjaga suhu reaksi tetap stabil dan seragam di keenam ruang, sekaligus menjadi bangku optik yang menahan lensa pada posisinya.", "bentuk": "Balok 40 × 34 × 53 mm dengan lubang berkunci untuk cartridge. Enam lubang eksitasi dari sisi kiri dan enam lubang emisi dari sisi depan membentuk geometri 90°: cahaya LED tidak langsung mengarah ke sensor, sehingga sinyal latar lebih rendah. Dudukan lensa bola dibuat langsung di blok supaya sejajar.", "bahan": "Aluminium 6061-T6, anodisasi hitam (menyerap cahaya nyasar, konduktivitas panas tinggi).", "proses": "CNC milling + anodisasi.", "status": "Usulan", "inklusif": "", "uji": "Uji keseragaman suhu antarruang dan stabilitas ±0,5 °C (target)."}, "O04": {"id": "O04", "nama": "Papan LED eksitasi", "grup": "Inti optik & termal", "fungsi": "Enam LED memberi cahaya eksitasi ke tiap ruang reaksi, dikendalikan arus-konstan dan dinyalakan berkedip (pulsed) untuk mengurangi pengaruh cahaya sekitar.", "bentuk": "PCB vertikal sejajar sisi kiri blok; satu LED per ruang pada jarak 8 mm.", "bahan": "PCB hitam + LED (contoh: biru ±470 nm untuk reporter FAM; panjang gelombang final ditetapkan di Tahap 2).", "proses": "SMT assembly.", "status": "Usulan (jenis LED belum ditetapkan)", "inklusif": "", "uji": "Bandingkan kandidat LED & panjang gelombang dengan referensi fluoresen non-biologis."}, "O05": {"id": "O05", "nama": "Filter eksitasi", "grup": "Inti optik & termal", "fungsi": "Meloloskan hanya rentang panjang gelombang eksitasi dari LED.", "bentuk": "Satu strip filter untuk keenam saluran agar perakitan sederhana.", "bahan": "Kaca filter interferensi band-pass.", "proses": "Komponen optik beli jadi, dipotong.", "status": "Usulan (jenis filter belum ditetapkan)", "inklusif": "", "uji": ""}, "O06": {"id": "O06", "nama": "Lensa bola (×12)", "grup": "Inti optik & termal", "fungsi": "Memfokuskan cahaya eksitasi ke ruang reaksi dan mengumpulkan cahaya emisi ke sensor.", "bentuk": "Lensa bola Ø4 mm duduk di ceruk blok: mudah dirakit, otomatis sejajar, murah.", "bahan": "Kaca optik (mis. N-BK7).", "proses": "Komponen optik beli jadi.", "status": "Usulan", "inklusif": "", "uji": ""}, "O07": {"id": "O07", "nama": "Filter emisi", "grup": "Inti optik & termal", "fungsi": "Memisahkan cahaya emisi (fluoresensi) dari cahaya eksitasi yang terpantul.", "bentuk": "Strip tunggal di depan keenam fotodioda.", "bahan": "Kaca filter interferensi band-pass/long-pass.", "proses": "Komponen optik beli jadi.", "status": "Usulan (jenis filter belum ditetapkan)", "inklusif": "", "uji": ""}, "O08": {"id": "O08", "nama": "Papan fotodioda + penguat TIA", "grup": "Inti optik & termal", "fungsi": "Mengubah cahaya emisi menjadi sinyal listrik dan menguatkannya sebelum diubah ke digital.", "bentuk": "Enam fotodioda menghadap jendela emisi. Penguat transimpedansi di sisi belakang ditutup tutup logam (shield can) agar sinyal sangat kecil tidak terganggu derau listrik — penting karena cangkang plastik tidak meredam derau.", "bahan": "PCB hitam, fotodioda silikon, op-amp derau rendah, shield can baja timah.", "proses": "SMT assembly.", "status": "Usulan (jenis detektor belum ditetapkan)", "inklusif": "", "uji": "Ukur derau, background, dan repeatability (Tahap 2)."}, "O09": {"id": "O09", "nama": "Elemen Peltier (TEC)", "grup": "Inti optik & termal", "fungsi": "Memanaskan ATAU mendinginkan blok termal. Pendinginan diperlukan karena suhu ruang di Indonesia bisa melebihi suhu reaksi (mis. 37 °C untuk Cas12a), sedangkan pemanas biasa hanya bisa menaikkan suhu.", "bentuk": "Modul 30 × 30 mm dijepit antara blok termal dan heatsink.", "bahan": "Pelat keramik alumina + pelet bismut telurida.", "proses": "Komponen beli jadi.", "status": "Usulan (pilihan TEC vs pemanas film ditentukan setelah jenis Cas & suhu reaksi ditetapkan)", "inklusif": "", "uji": "Uji waktu naik/turun suhu dan konsumsi daya dari baterai."}, "O10": {"id": "O10", "nama": "Heatsink sirip", "grup": "Inti optik & termal", "fungsi": "Membuang panas dari sisi panas Peltier.", "bentuk": "Sirip horizontal sejajar aliran udara dari depan ke belakang.", "bahan": "Aluminium 6063 ekstrusi.", "proses": "Ekstrusi + CNC.", "status": "Usulan", "inklusif": "", "uji": ""}, "O11": {"id": "O11", "nama": "Kipas 40 mm", "grup": "Inti optik & termal", "fungsi": "Menarik udara melalui heatsink dan membuangnya lewat panel belakang.", "bentuk": "Kipas aksial tipis, kecepatan diatur agar senyap saat tidak dibutuhkan.", "bahan": "Rangka PBT, rotor PBT, bantalan fluida.", "proses": "Komponen beli jadi.", "status": "Usulan", "inklusif": "", "uji": "Ukur kebisingan (target senyap untuk ruang periksa)."}, "O12": {"id": "O12", "nama": "Termistor NTC presisi", "grup": "Inti optik & termal", "fungsi": "Mengukur suhu blok untuk kendali umpan balik.", "bentuk": "Butir kaca kecil di sumur blok dekat ruang reaksi.", "bahan": "NTC berenkapsulasi kaca.", "proses": "Komponen beli jadi.", "status": "Usulan", "inklusif": "", "uji": ""}, "O13": {"id": "O13", "nama": "Bantalan isolasi termal", "grup": "Inti optik & termal", "fungsi": "Mengurangi kehilangan panas sehingga baterai lebih awet dan suhu lebih stabil.", "bentuk": "Pelat tipis di sisi belakang blok (sisi tanpa jalur optik).", "bahan": "Aerogel komposit atau busa silikon.", "proses": "Die-cut.", "status": "Usulan", "inklusif": "", "uji": ""}, "O14": {"id": "O14", "nama": "Mekanisme ejector", "grup": "Inti optik & termal", "fungsi": "Menopang cartridge di posisi baca dan mendorongnya naik saat eject.", "bentuk": "Plunger berpegas di bawah cartridge dengan alur penguncian.", "bahan": "POM + pegas baja tahan karat.", "proses": "Injection molding + pegas.", "status": "Usulan", "inklusif": "", "uji": ""}, "O15": {"id": "O15", "nama": "Saklar deteksi cartridge", "grup": "Inti optik & termal", "fungsi": "Memastikan cartridge sudah duduk penuh sebelum pembacaan dimulai.", "bentuk": "Microswitch dengan tuas yang tertekan oleh plunger.", "bahan": "Microswitch tersegel.", "proses": "Komponen beli jadi.", "status": "Usulan", "inklusif": "", "uji": ""}, "O16": {"id": "O16", "nama": "Solenoid pengunci", "grup": "Inti optik & termal", "fungsi": "Mengunci cartridge selama pembacaan supaya tidak tercabut di tengah reaksi; dilepas otomatis setelah selesai atau saat dibatalkan.", "bentuk": "Pawl kecil masuk ke takik di sisi kiri cartridge.", "bahan": "Solenoid baja + koil tembaga.", "proses": "Komponen beli jadi.", "status": "Usulan", "inklusif": "", "uji": ""}, "O17": {"id": "O17", "nama": "Peredam getaran (×4)", "grup": "Inti optik & termal", "fungsi": "Mengurangi getaran dan guncangan ke inti optik saat alat dibawa atau dipakai di kendaraan.", "bentuk": "Grommet silikon di keempat sudut dudukan.", "bahan": "Silikon Shore 40A.", "proses": "Molding.", "status": "Usulan", "inklusif": "", "uji": ""}, "O18": {"id": "O18", "nama": "Bracket inti optik", "grup": "Inti optik & termal", "fungsi": "Menopang inti optik di atas pelat chassis.", "bentuk": "Meja pelat baja dengan dua kaki dan lubang peringan.", "bahan": "Baja galvanis/SUS 1,5 mm.", "proses": "Laser cut + tekuk.", "status": "Usulan", "inklusif": "", "uji": ""}, "P01": {"id": "P01", "nama": "Papan utama (kontrol & komputasi)", "grup": "Elektronik", "fungsi": "Menjalankan antarmuka & SENTRA-AID lokal (modul komputasi), mengendalikan optik dan suhu secara real-time (MCU), mengubah sinyal sensor ke digital (ADC 24-bit), menyimpan data offline, dan berkomunikasi (Wi-Fi/BT, LTE opsional).", "bentuk": "Dipasang mendatar di bawah dek transparan sehingga terlihat (identitas visual) dan mudah diakses saat servis. Fungsi kritis (optik, suhu, kontrol) dipisah ke MCU tersendiri agar tetap stabil walaupun UI sibuk.", "bahan": "PCB FR-4 6 lapis, solder mask hijau; modul komputasi pada konektor board-to-board.", "proses": "SMT assembly; firmware dengan audit trail.", "status": "Usulan", "inklusif": "", "uji": "Uji integrasi data end-to-end, QC, log, dan audit trail (Tahap 4 guidebook)."}, "P02": {"id": "P02", "nama": "Papan daya & I/O", "grup": "Elektronik", "fungsi": "Menerima daya USB-C PD (hingga 65 W), mengisi baterai, membagi tegangan, menggerakkan Peltier, dan menyediakan konektor USB-C, USB-A, dan Ethernet.", "bentuk": "Papan tegak sejajar panel belakang sehingga konektor langsung keluar ke panel tanpa kabel tambahan.", "bahan": "PCB FR-4 4 lapis dengan tembaga tebal untuk jalur arus.", "proses": "SMT + THT assembly.", "status": "Usulan", "inklusif": "", "uji": ""}, "P03": {"id": "P03", "nama": "Kabel & harness", "grup": "Elektronik", "fungsi": "Menghubungkan baterai, Peltier, kipas, LED, fotodioda, halo/NFC, speaker, tombol, dan layar ke papan.", "bentuk": "Dibuat sependek mungkin, diberi konektor berkunci (tidak bisa terbalik). Kabel sinyal fotodioda berpelindung.", "bahan": "Kabel UL1007/1061, FFC/FPC, kabel koaksial mikro.", "proses": "Perakitan harness.", "status": "Usulan", "inklusif": "", "uji": ""}, "B01": {"id": "B01", "nama": "Paket baterai 3S2P (6 × 18650)", "grup": "Daya", "fungsi": "Menyediakan daya saat tidak ada listrik atau di lapangan, dan menjadi cadangan (UPS) supaya reaksi tidak terhenti bila listrik padam.", "bentuk": "Enam sel 18650 (10,8 V nominal, ±65 Wh) disusun di bagian bawah belakang untuk menurunkan titik berat dan menyeimbangkan alat saat dijinjing. Kapasitas dijaga di bawah 100 Wh supaya alat boleh dibawa di kabin pesawat tanpa izin khusus (aturan umum IATA) — penting untuk distribusi antarpulau.", "bahan": "Sel Li-ion 18650 bermerek medis/industri, dudukan PC V-0, strip nikel.", "proses": "Perakitan las titik.", "status": "Usulan", "inklusif": "", "uji": "Uji jumlah pembacaan per pengisian, keamanan termal, dan sertifikasi transport baterai (UN 38.3)."}, "B02": {"id": "B02", "nama": "Papan BMS baterai", "grup": "Daya", "fungsi": "Melindungi baterai dari pengisian berlebih, pengosongan berlebih, arus berlebih, dan suhu tinggi; menghitung sisa daya untuk ditampilkan di layar.", "bentuk": "Papan kecil di atas paket baterai.", "bahan": "PCB FR-4 + IC proteksi 3S + MOSFET + sekring termal.", "proses": "SMT assembly.", "status": "Usulan", "inklusif": "", "uji": ""}, "S01": {"id": "S01", "nama": "Pelat chassis aluminium", "grup": "Struktur", "fungsi": "Tulang punggung internal tempat semua modul dibaut; menyebarkan panas dan menjadi titik pembumian elektronik.", "bentuk": "Pelat rata dengan lubang peringan dan bukaan untuk ventilasi.", "bahan": "Aluminium 5052 1,5 mm.", "proses": "Laser cut/punching.", "status": "Usulan", "inklusif": "", "uji": ""}, "S02": {"id": "S02", "nama": "Bracket layar", "grup": "Struktur", "fungsi": "Menahan modul layar pada panel muka dan memberi kekakuan.", "bentuk": "Bingkai pelat tipis dengan bukaan tengah.", "bahan": "Baja SUS 0,8 mm.", "proses": "Stamping.", "status": "Usulan", "inklusif": "", "uji": ""}, "S03": {"id": "S03", "nama": "Standoff M3", "grup": "Pengencang", "fungsi": "Menopang papan sirkuit pada jarak yang tepat.", "bentuk": "Heksagonal M3.", "bahan": "Aluminium/kuningan.", "proses": "Bubut.", "status": "Usulan", "inklusif": "", "uji": ""}, "S04": {"id": "S04", "nama": "Sekrup M3", "grup": "Pengencang", "fungsi": "Mengikat modul; jenis kepala seragam (heksalobular/Torx) agar satu obeng cukup untuk servis.", "bentuk": "Kepala pan dengan ceruk heksalobular.", "bahan": "Baja tahan karat A2.", "proses": "Komponen standar.", "status": "Usulan", "inklusif": "", "uji": ""}, "C01": {"id": "C01", "nama": "Badan cartridge (COC transparan)", "grup": "Cartridge", "fungsi": "Wadah reaksi tertutup berisi enam ruang: T1–T4 (target varian rpoB terpilih), IC (kontrol internal), dan REF (latar/referensi tanpa guide RNA). Kanal mikro membagi sampel ke tiap ruang; kanal vent membuang udara.", "bentuk": "Prisma 20 × 12 × 66 mm dengan satu sudut terpotong (kunci orientasi) dan ujung bawah dichamfer agar mudah masuk. Ruang reaksi tersusun vertikal dengan jarak 8 mm, tepat di depan lubang optik blok. Dinding kiri tipis menjadi jendela eksitasi dan dinding depan menjadi jendela emisi. Rusuk kecil di sisi kanan menandai tiap ruang. Format tertutup dipilih untuk menekan risiko kontaminasi produk amplifikasi (guidebook).", "bahan": "COC (cyclic olefin copolymer) kelas optik/medis: sangat bening, autofluoresensi rendah, menyerap air sangat sedikit, dan cocok untuk cetak mikro.", "proses": "Injection molding mikro presisi, kanal ditutup film.", "status": "Usulan (jumlah ruang, geometri, dan format reaksi belum ditetapkan)", "inklusif": "", "uji": "Uji pengisian merata tanpa gelembung, cross-talk antarruang, dan autofluoresensi bahan."}, "C02": {"id": "C02", "nama": "Film segel hitam", "grup": "Cartridge", "fungsi": "Menutup kanal mikro dan sisi belakang ruang reaksi.", "bentuk": "Film tipis rata di sisi belakang; warna hitam menyerap cahaya nyasar sehingga sinyal latar lebih rendah.", "bahan": "PET hitam dengan perekat peka tekanan/heat-seal yang kompatibel biologis.", "proses": "Laminasi.", "status": "Usulan", "inklusif": "", "uji": ""}, "C03": {"id": "C03", "nama": "Kepala grip cartridge", "grup": "Cartridge", "fungsi": "Tempat jari memegang cartridge, saluran masuk sampel, sumbat cahaya saat cartridge terpasang, tempat label & tag.", "bentuk": "Blok 26 × 16 × 24 mm (lebih lebar dari badan) sehingga cartridge tidak bisa masuk terlalu dalam dan selalu berhenti di posisi baca. Rusuk melintang di tiga sisi untuk cengkeraman, panah timbul ke bawah di muka depan (arah masuk), dan sudut terpotong yang sama dengan badan sebagai petunjuk orientasi yang terlihat dan teraba.", "bahan": "PP hitam (polipropilena): tahan bahan kimia, murah, dan opak.", "proses": "Injection molding, dilas ultrasonik ke badan.", "status": "Usulan", "inklusif": "Arah masuk dapat dikenali dengan rabaan (panah timbul + sudut terpotong).", "uji": ""}, "C04": {"id": "C04", "nama": "Tutup tuas + plunger", "grup": "Cartridge", "fungsi": "Setelah sampel dipipet ke lubang masuk, tutup ditekan: plunger mendorong cairan ke kanal dan ruang reaksi, lalu tutup terkunci permanen (tidak bisa dibuka lagi) sehingga cartridge tetap tertutup sampai dibuang.", "bentuk": "Tuas berengsel di sisi belakang dengan lidah jari di depan: gaya tekan kecil karena prinsip tuas. Titik timbul di atas tutup = kode panel yang dapat diraba.", "bahan": "PP warna Indigo SENTRA (warna mengikuti keluarga panel; informasi panel juga ada di teks, titik timbul, dan NFC).", "proses": "Injection molding dengan engsel.", "status": "Usulan", "inklusif": "Tidak bergantung pada warna saja: kode panel juga lewat titik timbul, teks label, dan NFC.", "uji": "Ukur gaya tutup (target rendah) dan keandalan kunci permanen."}, "C05": {"id": "C05", "nama": "Cincin-O plunger", "grup": "Cartridge", "fungsi": "Menyegel plunger di lubang masuk supaya cairan terdorong, tidak bocor.", "bentuk": "O-ring kecil di alur ujung plunger.", "bahan": "Silikon kelas medis.", "proses": "Molding.", "status": "Usulan", "inklusif": "", "uji": ""}, "C06": {"id": "C06", "nama": "Membran vent PTFE", "grup": "Cartridge", "fungsi": "Membuang udara saat ruang terisi cairan, tetapi menahan cairan dan aerosol.", "bentuk": "Cakram kecil di sisi kiri kepala grip, terhubung ke kanal vent.", "bahan": "PTFE hidrofobik berpori (mis. 0,2 µm).", "proses": "Die-cut, las panas.", "status": "Usulan", "inklusif": "", "uji": ""}, "C07": {"id": "C07", "nama": "Tag NFC", "grup": "Cartridge", "fungsi": "Menyimpan identitas panel, lot, tanggal kedaluwarsa, dan parameter kalibrasi lot untuk dibaca reader.", "bentuk": "Inlay bulat di dalam kepala grip, dekat koil NFC reader saat terpasang.", "bahan": "Chip NFC + antena tembaga.", "proses": "Inlay saat molding.", "status": "Usulan", "inklusif": "", "uji": ""}, "C08": {"id": "C08", "nama": "Butir reagen beku-kering (×6)", "grup": "Cartridge", "fungsi": "Berisi Cas12, guide RNA spesifik tiap ruang, dan reporter fluorofor–quencher dalam bentuk kering sehingga tidak membutuhkan rantai dingin selama distribusi.", "bentuk": "Butir kecil di dasar tiap ruang; larut saat sampel masuk.", "bahan": "Reagen beku-kering (lyophilized) dengan pelindung gula.", "proses": "Pengeringan beku.", "status": "Perlu diuji (stabilitas reagen kering pada suhu tropis)", "inklusif": "", "uji": ""}, "C09": {"id": "C09", "nama": "Label cetak", "grup": "Cartridge", "fungsi": "Menampilkan kode 2D, nama panel, lot, dan kedaluwarsa untuk dibaca manusia maupun pemindai.", "bentuk": "Label di muka depan grip, terlindung dalam ceruk.", "bahan": "Label sintetis tahan alkohol.", "proses": "Cetak termal & tempel.", "status": "Usulan", "inklusif": "", "uji": ""}}, "GROUPS": ["Eksterior", "Antarmuka", "Inti optik & termal", "Elektronik", "Daya", "Struktur", "Pengencang", "Cartridge"], "GROUP_INFO": {"Eksterior": "Cangkang, rangka, tombol, dan bagian yang disentuh pengguna.", "Antarmuka": "Layar, suara, cahaya status, NFC, dan antena: cara alat berkomunikasi dengan pengguna.", "Inti optik & termal": "Ruang baca kedap cahaya: pemanas/pendingin reaksi, LED, filter, lensa, dan sensor.", "Elektronik": "Papan kontrol, komputasi, daya, dan konektor.", "Daya": "Baterai dan proteksinya, supaya alat bisa dipakai saat listrik padam atau di lapangan.", "Struktur": "Rangka dalam yang menahan semua modul dan meneruskan panas/pembumian.", "Kabel & harness": "Penghubung antarmodul.", "Pengencang": "Sekrup dan standoff.", "Cartridge": "Wadah reaksi tertutup sekali pakai yang dibaca oleh reader."}};
+(function () {
+  let dirty = true, lastHalo = -1e9;
+  const $ = (s) => document.querySelector(s);
+  const canvas = $('#c');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.LinearToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+  const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(-0.6, 1.0, 0.8); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xdfe4ff, 0.7); rim.position.set(0.5, 0.6, -0.8); scene.add(rim);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a8, 0.35));
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 20);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.minDistance = 0.18; controls.maxDistance = 3.6;
+  const CAMS = { front: [-0.36, 0.30, 0.53], right: [0.55, 0.27, 0.30], back: [0.40, 0.28, -0.55], top: [0.001, 0.74, 0.05] };
+  const target = new THREE.Vector3(0, 0.085, 0);
+  const exShift = new THREE.Vector3();   // centre of the fully exploded model minus the assembled centre
+  const ZOOM_PER_EX = 1.35;              // camera pulls back as the model spreads
+  let ex = 0, tween = null;
+  function camGoal(name) {
+    const t = target.clone().addScaledVector(exShift, ex);
+    const p = new THREE.Vector3(...CAMS[name]).sub(target).multiplyScalar(1 + ZOOM_PER_EX * ex).add(t);
+    return { p, t };
+  }
+  function setCam(name, instant) {
+    const g = camGoal(name);
+    if (instant) { camera.position.copy(g.p); controls.target.copy(g.t); return; }
+    tween = { from: camera.position.clone(), to: g.p, t0: performance.now(), dur: 650, tf: controls.target.clone(), tt: g.t };
+  }
+
+  function resize() {
+    const r = canvas.parentElement.getBoundingClientRect();
+    renderer.setSize(r.width, r.height, false);
+    camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix();
+    dirty = true;
+  }
+  new ResizeObserver(resize).observe(canvas.parentElement);
+
+  const parts = [];            // { mesh, base, ex, id, mod, grp, exterior }
+  const byMod = new Map();
+  let haloMat = null, haloCanvas = null, haloTex = null;
+  const loader = new THREE.GLTFLoader();
+  // Embedded GLB textures load through <img> (blob: URL) rather than fetch(), which the page's frame may refuse.
+  loader.register((parser) => { parser.textureLoader = new THREE.TextureLoader(parser.options.manager); return { name: 'sentra_img_textures' }; });
+  let modelRoot = null;
+  const onModel = (gltf) => {
+    const root = gltf.scene;
+    modelRoot = root;
+    scene.add(root);
+    root.updateMatrixWorld(true);
+    root.traverse((o) => {
+      if (!o.isMesh) return;
+      const host = (o.userData && o.userData.sentra_id) ? o : (o.parent && o.parent.userData && o.parent.userData.sentra_id ? o.parent : o);
+      const ud = host.userData || {};
+      if (Array.isArray(o.material)) o.material = o.material.map((m) => m.clone()); else o.material = o.material.clone();
+      const m = o.material;
+      m.userData.baseOpacity = m.opacity; m.userData.baseTransparent = m.transparent;
+      m.userData.baseEmissive = m.emissive ? m.emissive.clone() : null;
+      m.userData.baseEmissiveIntensity = m.emissiveIntensity;
+      const ex = ud.explode_gltf_m ? new THREE.Vector3(...ud.explode_gltf_m) : new THREE.Vector3();
+      const rec = { mesh: o, host, base: host.position.clone(), ex, id: ud.sentra_id || '', mod: ud.modul || ud.sentra_id || '', grp: ud.grup || '' };
+      rec.exterior = /^E/.test(rec.id) && rec.grp === 'Eksterior';
+      rec.cart = rec.grp === 'Cartridge';
+      if (!parts.some((p) => p.host === host)) parts.push(rec);
+      if (!byMod.has(rec.mod)) byMod.set(rec.mod, []);
+      byMod.get(rec.mod).push(o);
+      if (o.name === 'E09_cincin_halo' || host.name === 'E09_cincin_halo') { haloMat = m; }
+    });
+    // halo canvas texture (UV: 48 mm square centred on the port, row 0 = away from user)
+    if (haloMat) {
+      haloCanvas = document.createElement('canvas'); haloCanvas.width = haloCanvas.height = 256;
+      haloTex = new THREE.CanvasTexture(haloCanvas); haloTex.flipY = false; haloTex.encoding = THREE.sRGBEncoding;
+      haloMat.emissiveMap = haloTex; haloMat.emissive = new THREE.Color(0xffffff); haloMat.emissiveIntensity = 1.6;
+      haloMat.needsUpdate = true;
+    }
+    // where the fully exploded model sits, so the camera can follow the slider
+    const box = new THREE.Box3(), c0 = new THREE.Vector3(), c1 = new THREE.Vector3();
+    ex = 0; layout(); root.updateMatrixWorld(true); box.setFromObject(root); box.getCenter(c0);
+    ex = 1; layout(); root.updateMatrixWorld(true); box.setFromObject(root); box.getCenter(c1);
+    ex = 0; layout(); root.updateMatrixWorld(true);
+    exShift.subVectors(c1, c0);
+    $('#loading').hidden = true;
+    buildTree(); select('E10');
+    setCam('front', true);
+  };
+  const onErr = (err) => { $('#loading').textContent = 'Model gagal dimuat. Muat ulang halaman.'; console.error(err); };
+  // GLB dibaca langsung sebagai biner, dengan progres unduhan.
+  const MODEL_URL = '../models/sentra_reader_urai.glb';
+  (async () => {
+    try {
+      const res = await fetch(MODEL_URL);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const total = +res.headers.get('Content-Length') || 0;
+      let buf;
+      if (res.body && res.body.getReader && total) {
+        const reader = res.body.getReader(), chunks = [];
+        let got = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value); got += value.length;
+          $('#loading').textContent = 'Memuat model 3D… ' + Math.min(99, Math.round(100 * got / total)) + '%';
+        }
+        buf = new Uint8Array(got);
+        let o = 0;
+        for (const c of chunks) { buf.set(c, o); o += c.length; }
+        buf = buf.buffer;
+      } else {
+        buf = await res.arrayBuffer();
+      }
+      $('#loading').textContent = 'Menyusun 568 part…';
+      loader.parse(buf, '', onModel, onErr);
+    } catch (e) { onErr(e); }
+  })();
+
+  // ---------- modes ----------
+  let mode = 'full';
+  function applyMode() {
+    for (const p of parts) {
+      const mats = Array.isArray(p.mesh.material) ? p.mesh.material : [p.mesh.material];
+      const isHousing = p.exterior;
+      p.host.visible = !(mode === 'int' && isHousing);
+      for (const m of mats) {
+        if (mode === 'xray' && isHousing) { m.transparent = true; m.opacity = 0.14; m.depthWrite = false; }
+        else { m.transparent = m.userData.baseTransparent; m.opacity = m.userData.baseOpacity; m.depthWrite = !m.userData.baseTransparent; }
+        m.needsUpdate = true;
+      }
+    }
+    for (const [id, b] of [['full', '#m-full'], ['xray', '#m-xray'], ['int', '#m-int']]) $(b).setAttribute('aria-pressed', String(mode === id));
+  }
+  $('#m-full').onclick = () => { mode = 'full'; applyMode(); };
+  $('#m-xray').onclick = () => { mode = 'xray'; applyMode(); };
+  $('#m-int').onclick = () => { mode = 'int'; applyMode(); };
+
+  // ---------- explode & cartridge ----------
+  let cartOut = 0, cartTarget = 0;
+  $('#ex').addEventListener('input', (e) => {
+    const nex = e.target.value / 100;
+    const r = (1 + ZOOM_PER_EX * nex) / (1 + ZOOM_PER_EX * ex);
+    const off = camera.position.clone().sub(controls.target).multiplyScalar(r);
+    controls.target.addScaledVector(exShift, nex - ex);
+    camera.position.copy(controls.target).add(off);
+    tween = null;
+    ex = nex; $('#exv').textContent = e.target.value + '%';
+  });
+  $('#cart').onclick = () => { cartTarget = cartTarget ? 0 : 1; $('#cart').textContent = cartTarget ? 'Masukkan cartridge' : 'Keluarkan cartridge'; };
+  function layout() {
+    for (const p of parts) {
+      p.host.position.copy(p.base).addScaledVector(p.ex, ex);
+      if (p.cart) p.host.position.y += 0.085 * cartOut;
+    }
+  }
+
+  // ---------- halo states ----------
+  let halo = 'baca';
+  document.querySelectorAll('[data-halo]').forEach((b) => b.onclick = () => {
+    halo = b.dataset.halo;
+    document.querySelectorAll('[data-halo]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  });
+  function drawHalo(t) {
+    if (!haloCanvas) return;
+    const g = haloCanvas.getContext('2d'), S = 256, c = S / 2, rin = 15.6 / 48 * S, rout = 20.4 / 48 * S;
+    g.clearRect(0, 0, S, S); g.fillStyle = '#000'; g.fillRect(0, 0, S, S);
+    const ring = (from, to, col) => { g.beginPath(); g.arc(c, c, rout, from, to); g.arc(c, c, rin, to, from, true); g.closePath(); g.fillStyle = col; g.fill(); };
+    const top = -Math.PI / 2;
+    if (halo === 'siap') { ring(0, Math.PI * 2, 'rgba(120,170,255,0.55)'); }
+    else if (halo === 'baca') { ring(0, Math.PI * 2, '#121a46'); const p = (t / 9000) % 1; ring(top, top + Math.PI * 2 * Math.max(0.02, p), '#5aa0ff'); }
+    else if (halo === 'aksi') { const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t / 260)); ring(0, Math.PI * 2, `rgba(255,150,40,${a})`); }
+    else if (halo === 'selesai') { const on = Math.floor(t / 450) % 2 === 0 || (t % 5000) > 2700; ring(0, Math.PI * 2, on ? '#9cc8ff' : '#1a2350'); }
+    haloTex.needsUpdate = true;
+  }
+
+  // ---------- selection ----------
+  let current = null;
+  function highlight(mod, on) {
+    for (const o of byMod.get(mod) || []) {
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        if (!m.emissive || m === haloMat) continue;
+        if (on) { m.emissive.set(0xff8a1f); m.emissiveIntensity = 0.55; }
+        else { m.emissive.copy(m.userData.baseEmissive || new THREE.Color(0)); m.emissiveIntensity = m.userData.baseEmissiveIntensity; }
+      }
+    }
+  }
+  function chip(status) {
+    const out = [];
+    if (/Terlihat/.test(status)) out.push('<span class="chip t">Terlihat</span>');
+    if (/Usulan/.test(status)) out.push('<span class="chip u">Usulan</span>');
+    if (/Perlu diuji/.test(status)) out.push('<span class="chip p">Perlu diuji</span>');
+    return out.join('');
+  }
+  const esc = (s) => String(s || '').replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+  function select(mod) {
+    if (current) highlight(current, false);
+    current = mod; highlight(mod, true);
+    const d = DATA.D[mod] || { nama: mod };
+    const rows = [['Fungsi', d.fungsi], ['Kenapa bentuknya begini', d.bentuk], ['Bahan', d.bahan], ['Proses produksi', d.proses], ['Desain inklusif', d.inklusif], ['Perlu diuji', d.uji]]
+      .filter((r) => r[1]).map((r) => `<div><dt>${r[0]}</dt><dd>${esc(r[1])}</dd></div>`).join('');
+    const st = d.status || '';
+    const detail = /[(·]/.test(st) ? `<div class="stnote">${esc(st)}</div>` : '';
+    $('#info').innerHTML = `<div class="id">${esc(mod)} · ${esc(d.grup || '')}</div><h2>${esc(d.nama)}</h2><div class="chips">${chip(st)}</div>${detail}<dl>${rows}</dl>`;
+    document.querySelectorAll('.mod').forEach((b) => b.setAttribute('aria-current', String(b.dataset.mod === mod)));
+  }
+  function buildTree() {
+    const groups = DATA.GROUPS;
+    const html = groups.map((g) => {
+      const mods = Object.values(DATA.D).filter((d) => d.grup === g && byMod.has(d.id));
+      if (!mods.length) return '';
+      const items = mods.map((d) => `<button type="button" class="mod" data-mod="${d.id}"><code>${d.id}</code><span>${esc(d.nama)}</span></button>`).join('');
+      return `<details ${g === 'Eksterior' || g === 'Inti optik & termal' ? 'open' : ''}><summary>${esc(g)}<span class="n">${mods.length}</span></summary><div class="mods">${items}</div></details>`;
+    }).join('');
+    $('#tree').innerHTML = html;
+    $('#tree').addEventListener('click', (e) => { const b = e.target.closest('.mod'); if (b) select(b.dataset.mod); });
+  }
+  // picking
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let down = null;
+  canvas.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
+  canvas.addEventListener('pointerup', (e) => {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const vis = parts.filter((p) => p.host.visible).map((p) => p.mesh);
+    const hits = ray.intersectObjects(vis, false).filter((h) => !(mode === 'xray' && parts.find((p) => p.mesh === h.object)?.exterior));
+    if (hits.length) { const p = parts.find((q) => q.mesh === hits[0].object); if (p) select(p.mod); }
+  });
+  document.querySelectorAll('[data-cam]').forEach((b) => b.onclick = () => setCam(b.dataset.cam));
+
+  // render on demand: only when the view or the model changes (halo animates at ~12 fps)
+  controls.addEventListener('change', () => { dirty = true; });
+  window.addEventListener('resize', () => { dirty = true; });
+  $('#ex').addEventListener('input', () => { dirty = true; });
+  document.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { dirty = true; lastHalo = -1e9; }));
+  function frame(t) {
+    requestAnimationFrame(frame);
+    if (tween) {
+      const k = Math.min(1, (t - tween.t0) / tween.dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      camera.position.lerpVectors(tween.from, tween.to, e); controls.target.lerpVectors(tween.tf, tween.tt, e);
+      if (k >= 1) tween = null;
+      dirty = true;
+    }
+    if (Math.abs(cartTarget - cartOut) > 0.0005) { cartOut += (cartTarget - cartOut) * 0.08; dirty = true; }
+    const haloAnimated = halo !== 'siap';
+    if (t - lastHalo > (haloAnimated ? 83 : 1e12)) { drawHalo(t); lastHalo = t; dirty = true; }
+    controls.update();
+    if (dirty && parts.length) { layout(); renderer.render(scene, camera); dirty = false; }
+  }
+  resize(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

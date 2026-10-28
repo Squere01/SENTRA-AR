@@ -1,4 +1,7 @@
-# SENTRA Reader · halaman AR
+# SENTRA Reader · halaman AR + viewer 3D
+
+- `/` → halaman AR
+- `/viewer/` → viewer 3D interaktif
 
 Halaman web statis untuk melihat SENTRA Reader v2 dalam augmented reality, dalam ukuran asli (skala 1 : 1).
 Tidak butuh build, server, atau API: cukup upload folder ini ke hosting statis HTTPS.
@@ -10,6 +13,7 @@ Tidak butuh build, server, atau API: cukup upload folder ini ke hosting statis H
 | `models/sentra_reader.glb` / `.usdz` | Model utuh: Android / iPhone |
 | `models/sentra_reader_urai.glb` / `.usdz` | Model 568 part dengan animasi urai lalu menyatu |
 | `fonts/` | IBM Plex |
+| `viewer/` | Viewer 3D interaktif (three.js r147 lokal): urai bertahap, X-ray, simulasi halo, penjelasan 64 modul. Memakai `models/sentra_reader_urai.glb` |
 | `vercel.json`, `_headers` | Content-Type yang benar untuk `.glb` dan `.usdz` (Vercel / Netlify) |
 
 ## Cara deploy (pilih satu)

@@ -60,6 +60,9 @@ ol li i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(-
 .dim { display: flex; gap: 8px; flex-wrap: wrap; }
 .dim span { font: 500 12px/1 PlexMono, monospace; background: var(--ind-s); border-radius: 99px; padding: 7px 10px; }
 footer { padding: 14px 16px max(18px, env(safe-area-inset-bottom)); font-size: 12px; color: var(--mut); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); margin-top: 8px; }
+.vlink { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; text-decoration: none; color: inherit; background: var(--night); color: #fff; border-radius: 16px; padding: 14px 16px; }
+.vlink b { font: 700 17px/1.1 PlexCond, sans-serif; display: block; } .vlink small { color: #C9CCF2; font-size: 12.5px; display: block; margin-top: 4px; }
+.vlink span.go { width: 36px; height: 36px; border-radius: 50%; background: var(--ind); display: grid; place-items: center; font-size: 18px; }
 .hide { display: none !important; }
 </style>
 </head>
@@ -113,6 +116,7 @@ footer { padding: 14px 16px max(18px, env(safe-area-inset-bottom)); font-size: 1
         <h2>Bagian yang ditandai</h2>
         <div class="parts" id="parts"></div>
       </div>
+      <a class="vlink" href="viewer/"><span><b>Viewer 3D lengkap</b><small>Urai bertahap, mode X-ray, simulasi halo, dan penjelasan tiap part.</small></span><span class="go" aria-hidden="true">→</span></a>
     </aside>
   </main>
   <footer><span>SENTRA-TB · Tim SENTRA-TB · NATUS 2026</span><span>Konsep riset, belum tervalidasi secara klinis</span></footer>
